@@ -39,6 +39,15 @@
  * pipe_context
  */
 
+static void r600_mapped_use_hint(struct pipe_context *pipe,
+				struct pipe_resource *resource)
+{
+	struct r600_common_context *ctx = (struct r600_common_context*)pipe;
+	struct r600_resource *res = r600_resource(resource);
+
+	ctx->ws->update_bo_stats_cpu(ctx->ws, res->cs_buf);
+}
+
 bool r600_common_context_init(struct r600_common_context *rctx,
 			      struct r600_common_screen *rscreen)
 {
@@ -52,6 +61,7 @@ bool r600_common_context_init(struct r600_common_context *rctx,
 	rctx->chip_class = rscreen->chip_class;
 	rctx->max_db = rscreen->chip_class >= EVERGREEN ? 8 : 4;
 
+	rctx->b.mapped_use_hint = r600_mapped_use_hint;
 	rctx->b.transfer_map = u_transfer_map_vtbl;
 	rctx->b.transfer_flush_region = u_default_transfer_flush_region;
 	rctx->b.transfer_unmap = u_transfer_unmap_vtbl;
