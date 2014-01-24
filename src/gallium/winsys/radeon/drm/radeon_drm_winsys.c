@@ -681,7 +681,9 @@ static PIPE_THREAD_ROUTINE(radeon_drm_timing_thread, param)
 
     while (!ws->kill_timing_thread) {
         uint64_t tmp = os_time_get_nano() / 1000000;
-        p_atomic_set(time, tmp);
+//        p_atomic_set(time, tmp);
+// Use GCC builtins for now, p_atomic doesn't support 64-bit vars
+	__sync_bool_compare_and_swap(time, *time, tmp);
 
         /* We want ms accuracy, so sleep for the Nyquist freq - 0.5ms */
         usleep(500);
