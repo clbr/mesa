@@ -30,6 +30,7 @@
 #ifndef RADEON_DRM_WINSYS_H
 #define RADEON_DRM_WINSYS_H
 
+#include <stdio.h>
 #include "radeon_winsys.h"
 #include "os/os_thread.h"
 #include "os/os_time.h"
