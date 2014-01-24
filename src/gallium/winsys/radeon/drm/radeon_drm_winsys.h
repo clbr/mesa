@@ -88,7 +88,9 @@ radeon_drm_winsys(struct radeon_winsys *base)
 }
 
 static INLINE unsigned long long stats_time_get(struct radeon_drm_winsys * const dws) {
-    return p_atomic_read(&dws->time);
+//    return p_atomic_read(&dws->time);
+// Use GCC atomics for now, p_atomic doesn't support 64-bit
+    return __sync_fetch_and_add(&dws->time, 0);
 }
 
 void radeon_drm_ws_queue_cs(struct radeon_drm_winsys *ws, struct radeon_drm_cs *cs);
