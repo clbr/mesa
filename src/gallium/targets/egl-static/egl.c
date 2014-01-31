@@ -61,7 +61,7 @@ create_drm_screen(const char *constname, int fd)
    char *name = (char *)constname;
 
    if (!name) {
-      name = loader_get_driver_for_fd(fd, _LOADER_GALLIUM);
+      name = loader_get_driver_for_fd(fd, _LOADER_GALLIUM, NULL);
       if (!name)
          return NULL;
    }

@@ -36,7 +36,7 @@ int
 loader_get_pci_id_for_fd(int fd, int *vendor_id, int *chip_id);
 
 char *
-loader_get_driver_for_fd(int fd, unsigned driver_types);
+loader_get_driver_for_fd(int fd, unsigned driver_types, const char *device_name);
 
 char *
 loader_get_device_name_for_fd(int fd);

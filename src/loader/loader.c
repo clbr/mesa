@@ -66,6 +66,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #ifdef HAVE_LIBUDEV
 #include <assert.h>
@@ -283,6 +285,40 @@ loader_get_pci_id_for_fd(int fd, int *vendor_id, int *chip_id)
 
 #endif
 
+static int
+loader_get_pci_id_for_device(const char *name, int *vendor_id, int *chip_id)
+{
+#ifdef __linux__
+   const char *card = strrchr(name, '/');
+   if (!card) return 0;
+   card++;
+
+   char buf[PATH_MAX];
+   snprintf(buf, PATH_MAX, "/sys/class/drm/%s/device/vendor", card);
+
+   FILE *f = fopen(buf, "r");
+   if (!f) return 0;
+   fgets(buf, PATH_MAX, f);
+   fclose(f);
+
+   int vendor_tmp = strtol(buf, NULL, 16);
+
+   snprintf(buf, PATH_MAX, "/sys/class/drm/%s/device/device", card);
+
+   f = fopen(buf, "r");
+   if (!f) return 0;
+   fgets(buf, PATH_MAX, f);
+   fclose(f);
+
+   int chip_tmp = strtol(buf, NULL, 16);
+
+   *vendor_id = vendor_tmp;
+   *chip_id = chip_tmp;
+   return 1;
+
+#endif
+   return 0;
+}
 
 char *
 loader_get_device_name_for_fd(int fd)
@@ -317,7 +353,7 @@ out:
 }
 
 char *
-loader_get_driver_for_fd(int fd, unsigned driver_types)
+loader_get_driver_for_fd(int fd, unsigned driver_types, const char *device_name)
 {
    int vendor_id, chip_id, i, j;
    char *driver = NULL;
@@ -325,7 +361,8 @@ loader_get_driver_for_fd(int fd, unsigned driver_types)
    if (!driver_types)
       driver_types = _LOADER_GALLIUM | _LOADER_DRI;
 
-   if (!loader_get_pci_id_for_fd(fd, &vendor_id, &chip_id)) {
+   if (!loader_get_pci_id_for_fd(fd, &vendor_id, &chip_id) &&
+       !loader_get_pci_id_for_device(device_name, &vendor_id, &chip_id)) {
 
 #ifndef __NOT_HAVE_DRM_H
       /* fallback to drmGetVersion(): */

@@ -274,7 +274,7 @@ dri_screen_create(struct gbm_dri_device *dri)
    const __DRIextension **extensions;
    int ret = 0;
 
-   dri->base.driver_name = loader_get_driver_for_fd(dri->base.base.fd, 0);
+   dri->base.driver_name = loader_get_driver_for_fd(dri->base.base.fd, 0, NULL);
    if (dri->base.driver_name == NULL)
       return -1;
 

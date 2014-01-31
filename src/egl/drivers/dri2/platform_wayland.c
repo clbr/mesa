@@ -1013,7 +1013,7 @@ dri2_initialize_wayland(_EGLDriver *drv, _EGLDisplay *disp)
    if (roundtrip(dri2_dpy) < 0 || !dri2_dpy->authenticated)
       goto cleanup_fd;
 
-   dri2_dpy->driver_name = loader_get_driver_for_fd(dri2_dpy->fd, 0);
+   dri2_dpy->driver_name = loader_get_driver_for_fd(dri2_dpy->fd, 0, NULL);
    if (dri2_dpy->driver_name == NULL) {
       _eglError(EGL_BAD_ALLOC, "DRI2: failed to get driver name");
       goto cleanup_fd;

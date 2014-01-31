@@ -1652,7 +1652,7 @@ dri3_create_screen(int screen, struct glx_display * priv)
    }
    deviceName = NULL;
 
-   driverName = loader_get_driver_for_fd(psc->fd, 0);
+   driverName = loader_get_driver_for_fd(psc->fd, 0, NULL);
    if (!driverName) {
       ErrorMessageF("No driver found\n");
       goto handle_error;

@@ -139,7 +139,7 @@ pipe_loader_drm_probe_fd(struct pipe_loader_device **dev, int fd,
    if (auth_x)
       pipe_loader_drm_x_auth(fd);
 
-   ddev->base.driver_name = loader_get_driver_for_fd(fd, _LOADER_GALLIUM);
+   ddev->base.driver_name = loader_get_driver_for_fd(fd, _LOADER_GALLIUM, NULL);
    if (!ddev->base.driver_name)
       goto fail;
 
