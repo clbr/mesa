@@ -79,5 +79,6 @@ void radeon_bo_reference(struct radeon_bo **dst, struct radeon_bo *src)
 }
 
 void *radeon_bo_do_map(struct radeon_bo *bo);
+void radeon_bo_set_score(struct radeon_winsys_cs_handle *buf, uint64_t score);
 
 #endif

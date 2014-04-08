@@ -92,6 +92,20 @@ struct drm_radeon_gem_va {
 #define DRM_RADEON_GEM_VA   0x2b
 #endif
 
+#ifndef DRM_RADEON_GEM_OP
+#define DRM_RADEON_GEM_OP		0x2c
+
+/* Sets or returns a value associated with a buffer. */
+struct drm_radeon_gem_op {
+    uint32_t handle; /* buffer */
+    uint32_t op;     /* RADEON_GEM_OP_* */
+    uint64_t value;  /* input or return value */
+};
+
+#define RADEON_GEM_OP_GET_INITIAL_DOMAIN	0
+#define RADEON_GEM_OP_SET_INITIAL_DOMAIN	1
+#define RADEON_GEM_OP_SET_SCORE			2
+#endif
 
 
 extern const struct pb_vtbl radeon_bo_vtbl;
@@ -1052,6 +1066,26 @@ static boolean radeon_winsys_bo_get_handle(struct pb_buffer *buffer,
 static uint64_t radeon_winsys_bo_va(struct radeon_winsys_cs_handle *buf)
 {
     return ((struct radeon_bo*)buf)->va;
+}
+
+void radeon_bo_set_score(struct radeon_winsys_cs_handle *buf, uint64_t score)
+{
+    struct radeon_bo *bo = (struct radeon_bo*)buf;
+    struct drm_radeon_gem_op args;
+    int ret;
+
+    if (bo->rws->info.drm_minor < 38)
+        return;
+
+    memset(&args, 0, sizeof(struct drm_radeon_gem_op));
+    args.handle = bo->handle;
+    args.op = RADEON_GEM_OP_SET_SCORE;
+    args.value = score;
+
+    ret = drmCommandWriteRead(bo->rws->fd, DRM_RADEON_GEM_OP,
+                              &args, sizeof(struct drm_radeon_gem_op));
+    if (ret)
+        fprintf(stderr, "gem_op_set_score failed with %d\n", ret);
 }
 
 void radeon_bomgr_init_functions(struct radeon_drm_winsys *ws)
