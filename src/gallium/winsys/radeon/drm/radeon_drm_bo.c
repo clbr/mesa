@@ -493,6 +493,8 @@ static void *radeon_bo_map(struct radeon_winsys_cs_handle *buf,
         }
     }
 
+    bo->stats.num_cpu_ops++;
+
     return radeon_bo_do_map(bo);
 }
 

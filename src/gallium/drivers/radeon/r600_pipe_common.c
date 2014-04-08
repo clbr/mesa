@@ -74,6 +74,15 @@ static void r600_flush_dma_from_winsys(void *ctx, unsigned flags)
 	rctx->rings.dma.flush(rctx, flags);
 }
 
+static void r600_mapped_use_hint(struct pipe_context *pipe,
+				 struct pipe_resource *resource)
+{
+	struct r600_common_context *ctx = (struct r600_common_context*)pipe;
+	struct r600_resource *res = r600_resource(resource);
+
+	ctx->ws->update_bo_stats_cpu(ctx->ws, res->cs_buf);
+}
+
 bool r600_common_context_init(struct r600_common_context *rctx,
 			      struct r600_common_screen *rscreen)
 {
@@ -92,6 +101,7 @@ bool r600_common_context_init(struct r600_common_context *rctx,
 	rctx->b.transfer_unmap = u_transfer_unmap_vtbl;
 	rctx->b.transfer_inline_write = u_default_transfer_inline_write;
         rctx->b.memory_barrier = r600_memory_barrier;
+        rctx->b.mapped_use_hint = r600_mapped_use_hint;
 
 	r600_init_context_texture_functions(rctx);
 	r600_streamout_init(rctx);

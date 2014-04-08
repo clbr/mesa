@@ -557,6 +557,14 @@ struct radeon_winsys {
 
     uint64_t (*query_value)(struct radeon_winsys *ws,
                             enum radeon_value_id value);
+
+    /**
+     * Update statistics for cpu use.
+     *
+     * \param buf A winsys buffer.
+     */
+     void (*update_bo_stats_cpu)(struct radeon_winsys *rws,
+				 struct radeon_winsys_cs_handle *buf);
 };
 
 /**

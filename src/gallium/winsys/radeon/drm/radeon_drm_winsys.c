@@ -614,6 +614,15 @@ static PIPE_THREAD_ROUTINE(radeon_drm_cs_emit_ioctl, param)
     return 0;
 }
 
+static void radeon_update_bo_stats_cpu(struct radeon_winsys *rws,
+				       struct radeon_winsys_cs_handle *buf)
+{
+    struct radeon_drm_winsys *ws = (struct radeon_drm_winsys*)rws;
+    struct radeon_bo *bo = (struct radeon_bo*)buf;
+
+    bo->stats.num_cpu_ops++;
+}
+
 DEBUG_GET_ONCE_BOOL_OPTION(thread, "RADEON_THREAD", TRUE)
 static PIPE_THREAD_ROUTINE(radeon_drm_cs_emit_ioctl, param);
 
@@ -665,6 +674,7 @@ PUBLIC struct radeon_winsys *radeon_drm_winsys_create(int fd)
     ws->base.surface_init = radeon_drm_winsys_surface_init;
     ws->base.surface_best = radeon_drm_winsys_surface_best;
     ws->base.query_value = radeon_query_value;
+    ws->base.update_bo_stats_cpu = radeon_update_bo_stats_cpu;
 
     radeon_bomgr_init_functions(ws);
     radeon_drm_cs_init_functions(ws);

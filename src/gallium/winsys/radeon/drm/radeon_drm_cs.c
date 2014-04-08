@@ -365,6 +365,9 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
     if (added_domains & RADEON_DOMAIN_VRAM)
         cs->csc->used_vram += bo->base.size;
 
+    if (usage & RADEON_USAGE_WRITE)
+        bo->stats.num_writes++;
+
     return index;
 }
 
