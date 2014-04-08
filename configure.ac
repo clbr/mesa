@@ -799,7 +799,7 @@ fi
 
 case "$host_os" in
 linux*)
-    need_libudev=yes ;;
+    need_libudev=no ;;
 *)
     need_libudev=no ;;
 esac
@@ -992,10 +992,6 @@ if test "x$enable_dri" = xyes; then
         DEFINES="$DEFINES -DHAVE_ALIAS"
         if test "x$enable_dri3" = xyes; then
             DEFINES="$DEFINES -DHAVE_DRI3"
-        fi
-
-        if test "x$have_libudev" != xyes; then
-            AC_MSG_ERROR([libudev-dev required for building DRI])
         fi
 
         case "$host_cpu" in
@@ -1728,9 +1724,6 @@ gallium_require_llvm() {
 
 gallium_require_drm_loader() {
     if test "x$enable_gallium_loader" = xyes; then
-        if test "x$need_libudev$have_libudev" = xyesno; then
-            AC_MSG_ERROR([Gallium drm loader requires libudev >= $LIBUDEV_REQUIRED])
-        fi
         if test "x$have_libdrm" != xyes; then
             AC_MSG_ERROR([Gallium drm loader requires libdrm >= $LIBDRM_REQUIRED])
         fi
