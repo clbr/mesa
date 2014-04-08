@@ -26,6 +26,7 @@
 
 #define _FILE_OFFSET_BITS 64
 #include "radeon_drm_cs.h"
+#include "neural.h"
 
 #include "util/u_hash_table.h"
 #include "util/u_memory.h"
@@ -1088,6 +1089,69 @@ void radeon_bo_set_score(struct radeon_winsys_cs_handle *buf, uint64_t score)
                               &args, sizeof(struct drm_radeon_gem_op));
     if (ret)
         fprintf(stderr, "gem_op_set_score failed with %d\n", ret);
+}
+
+uint64_t radeon_bo_calculate_score(uint64_t vram_size, struct radeon_bo_stats *stats)
+{
+    #include "magic.h"
+
+    static const struct network net = {
+        .input[0].weight = input0w,
+        .input[0].bias = input0b,
+        .input[1].weight = input1w,
+        .input[1].bias = input1b,
+        .input[2].weight = input2w,
+        .input[2].bias = input2b,
+        .hidden[0].weights[0] = hidden0w0,
+        .hidden[0].weights[1] = hidden0w1,
+        .hidden[0].weights[2] = hidden0w2,
+        .hidden[0].bias = hidden0b,
+        .hidden[1].weights[0] = hidden1w0,
+        .hidden[1].weights[1] = hidden1w1,
+        .hidden[1].weights[2] = hidden1w2,
+        .hidden[1].bias = hidden1b,
+        .hidden[2].weights[0] = hidden2w0,
+        .hidden[2].weights[1] = hidden2w1,
+        .hidden[2].weights[2] = hidden2w2,
+        .hidden[2].bias = hidden2b,
+        .hidden[3].weights[0] = hidden3w0,
+        .hidden[3].weights[1] = hidden3w1,
+        .hidden[3].weights[2] = hidden3w2,
+        .hidden[3].bias = hidden3b,
+        .hidden[4].weights[0] = hidden4w0,
+        .hidden[4].weights[1] = hidden4w1,
+        .hidden[4].weights[2] = hidden4w2,
+        .hidden[4].bias = hidden4b,
+        .hidden[5].weights[0] = hidden5w0,
+        .hidden[5].weights[1] = hidden5w1,
+        .hidden[5].weights[2] = hidden5w2,
+        .hidden[5].bias = hidden5b,
+        .hidden[6].weights[0] = hidden6w0,
+        .hidden[6].weights[1] = hidden6w1,
+        .hidden[6].weights[2] = hidden6w2,
+        .hidden[6].bias = hidden6b,
+        .hidden[7].weights[0] = hidden7w0,
+        .hidden[7].weights[1] = hidden7w1,
+        .hidden[7].weights[2] = hidden7w2,
+        .hidden[7].bias = hidden7b,
+        .output.weights[0] = outputw0,
+        .output.weights[1] = outputw1,
+        .output.weights[2] = outputw2,
+        .output.weights[3] = outputw3,
+        .output.weights[4] = outputw4,
+        .output.weights[5] = outputw5,
+        .output.weights[6] = outputw6,
+        .output.weights[7] = outputw7,
+        .output.bias = outputb,
+    };
+
+    const float inputs[INPUT_NEURONS] = {
+        CLAMP(vram_size / (1024.0f * 1024 * 1024 * 10), 0, 1),
+        CLAMP(stats->num_writes / 500.0f, 0, 1),
+        CLAMP(stats->num_cpu_ops / 500.0f, 0, 1)
+    };
+
+    return ai_calculate_score(inputs, &net);
 }
 
 void radeon_bomgr_init_functions(struct radeon_drm_winsys *ws)

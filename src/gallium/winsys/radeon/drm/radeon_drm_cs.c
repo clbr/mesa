@@ -359,6 +359,7 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
     struct radeon_bo *bo = (struct radeon_bo*)buf;
     enum radeon_bo_domain added_domains;
     unsigned index = radeon_add_reloc(cs, bo, usage, domains, priority, &added_domains);
+    uint64_t now = os_time_get_nano();
 
     if (added_domains & RADEON_DOMAIN_GTT)
         cs->csc->used_gart += bo->base.size;
@@ -367,6 +368,14 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
 
     if (usage & RADEON_USAGE_WRITE)
         bo->stats.num_writes++;
+
+    /* Has it been 30ms since last scoring? */
+    if ((now - bo->stats.last_scored) > 30000000) {
+        const uint64_t score = now +
+                               radeon_bo_calculate_score(cs->ws->info.vram_size,
+                                                         &bo->stats);
+        radeon_bo_set_score(buf, score);
+    }
 
     return index;
 }
