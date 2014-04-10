@@ -356,10 +356,11 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
                                         enum radeon_bo_priority priority)
 {
     struct radeon_drm_cs *cs = radeon_drm_cs(rcs);
+    struct radeon_drm_winsys *ws = cs->ws;
     struct radeon_bo *bo = (struct radeon_bo*)buf;
     enum radeon_bo_domain added_domains;
     unsigned index = radeon_add_reloc(cs, bo, usage, domains, priority, &added_domains);
-    uint64_t now = os_time_get_nano();
+    const uint64_t now = stats_time_get(ws);
 
     if (added_domains & RADEON_DOMAIN_GTT)
         cs->csc->used_gart += bo->base.size;
