@@ -370,8 +370,8 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
     if (usage & RADEON_USAGE_WRITE)
         bo->stats.num_writes++;
 
-    /* Has it been 30ms since last scoring? */
-    if ((now - bo->stats.last_scored) > 30000000) {
+    /* Has it been 10ms since last scoring? */
+    if ((now - bo->stats.last_scored) > 10000000) {
         const uint64_t score = now +
                                radeon_bo_calculate_score(cs->ws->info.vram_size,
                                                          &bo->stats);
