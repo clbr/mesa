@@ -32,6 +32,10 @@
 
 #include "r600_pipe_common.h"
 #include "r600d_common.h"
+#include "radeon_drm.h"
+
+#define RELOC_DWORDS (sizeof(struct drm_radeon_cs_reloc) / sizeof(uint32_t))
+#define RELOC_DWORDS_SCORED (sizeof(struct drm_radeon_cs_reloc_scored) / sizeof(uint32_t))
 
 static INLINE uint64_t r600_resource_va(struct pipe_screen *screen,
 					struct pipe_resource *resource)
@@ -48,7 +52,11 @@ static INLINE unsigned r600_context_bo_reloc(struct r600_common_context *rctx,
 					     enum radeon_bo_usage usage,
 					     enum radeon_bo_priority priority)
 {
+	unsigned reloc_size = RELOC_DWORDS;
 	assert(usage);
+
+	if (rctx->screen->info.drm_minor >= 38)
+		reloc_size = RELOC_DWORDS_SCORED;
 
 	/* Make sure that all previous rings are flushed so that everything
 	 * looks serialized from the driver point of view.
@@ -65,7 +73,7 @@ static INLINE unsigned r600_context_bo_reloc(struct r600_common_context *rctx,
 		}
 	}
 	return rctx->ws->cs_add_reloc(ring->cs, rbo->cs_buf, usage,
-				      rbo->domains, priority) * 4;
+				      rbo->domains, priority) * reloc_size;
 }
 
 static INLINE void r600_emit_reloc(struct r600_common_context *rctx,
