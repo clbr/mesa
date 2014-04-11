@@ -390,7 +390,6 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
     struct radeon_drm_winsys *ws = cs->ws;
     struct radeon_bo *bo = (struct radeon_bo*)buf;
     enum radeon_bo_domain added_domains;
-    unsigned index = radeon_add_reloc(cs, bo, usage, domains, priority, &added_domains);
     const uint64_t now = stats_time_get(ws);
 
     if (added_domains & RADEON_DOMAIN_GTT)
@@ -409,7 +408,7 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
         bo->stats.last_scored = now;
     }
 
-    return index;
+    return radeon_add_reloc(cs, bo, usage, domains, priority, &added_domains);
 }
 
 static boolean radeon_drm_cs_validate(struct radeon_winsys_cs *rcs)
