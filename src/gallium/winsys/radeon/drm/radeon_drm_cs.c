@@ -631,6 +631,7 @@ static void radeon_drm_cs_flush(struct radeon_winsys_cs *rcs, unsigned flags, ui
             }
             if (cs->ws->info.drm_minor >= 38) {
                 cs->cst->flags[0] |= RADEON_CS_USE_SCORED;
+                cs->cst->cs.num_chunks = 3;
             }
             break;
         }
