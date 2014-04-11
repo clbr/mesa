@@ -375,7 +375,6 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
         const uint64_t score = now +
                                radeon_bo_calculate_score(cs->ws->info.vram_size,
                                                          &bo->stats);
-        radeon_bo_set_score(buf, score);
         bo->stats.last_scored = now;
     }
 
