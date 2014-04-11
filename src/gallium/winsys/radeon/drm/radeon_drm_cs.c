@@ -372,9 +372,9 @@ static unsigned radeon_drm_cs_add_reloc(struct radeon_winsys_cs *rcs,
 
     /* Has it been 10ms since last scoring? */
     if ((now - bo->stats.last_scored) > 10000000) {
-        const uint64_t score = now +
-                               radeon_bo_calculate_score(cs->ws->info.vram_size,
-                                                         &bo->stats);
+        bo->stats.score = now +
+                          radeon_bo_calculate_score(cs->ws->info.vram_size,
+                                                    &bo->stats);
         bo->stats.last_scored = now;
     }
 

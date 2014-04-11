@@ -50,6 +50,8 @@ struct radeon_bo_stats {
 
     /* Nanoseconds in a monotonic clock */
     uint64_t last_scored;
+
+    uint64_t score;
 };
 
 struct radeon_bo {
