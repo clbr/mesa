@@ -47,6 +47,7 @@ struct radeon_cs_context {
     unsigned                    validated_crelocs;
     struct radeon_bo            **relocs_bo;
     struct drm_radeon_cs_reloc  *relocs;
+    struct drm_radeon_cs_reloc_scored  *relocs_scored;
 
     /* 0 = BO not added, 1 = BO added */
     char                        is_handle_added[512];
@@ -110,7 +111,10 @@ radeon_bo_is_referenced_by_cs_for_write(struct radeon_drm_cs *cs,
     if (index == -1)
         return FALSE;
 
-    return cs->csc->relocs[index].write_domain != 0;
+    if (cs->ws->info.drm_minor >= 38)
+        return cs->csc->relocs_scored[index].write_domain != 0;
+    else
+        return cs->csc->relocs[index].write_domain != 0;
 }
 
 static INLINE boolean

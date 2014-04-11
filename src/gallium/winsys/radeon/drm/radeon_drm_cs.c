@@ -117,6 +117,11 @@
 static boolean radeon_init_cs_context(struct radeon_cs_context *csc,
                                       struct radeon_drm_winsys *ws)
 {
+    unsigned reloc_size_bytes = RELOC_DWORDS * sizeof(uint32_t);
+
+    if (ws->info.drm_minor >= 38)
+        reloc_size_bytes = RELOC_DWORDS_SCORED * sizeof(uint32_t);
+
     csc->fd = ws->fd;
     csc->nrelocs = 512;
     csc->relocs_bo = (struct radeon_bo**)
@@ -126,11 +131,12 @@ static boolean radeon_init_cs_context(struct radeon_cs_context *csc,
     }
 
     csc->relocs = (struct drm_radeon_cs_reloc*)
-                  CALLOC(1, csc->nrelocs * sizeof(struct drm_radeon_cs_reloc));
+                  CALLOC(1, csc->nrelocs * reloc_size_bytes);
     if (!csc->relocs) {
         FREE(csc->relocs_bo);
         return FALSE;
     }
+    csc->relocs_scored = (struct drm_radeon_cs_reloc_scored*) csc->relocs;
 
     csc->chunks[0].chunk_id = RADEON_CHUNK_ID_IB;
     csc->chunks[0].length_dw = 0;
@@ -173,6 +179,7 @@ static void radeon_destroy_cs_context(struct radeon_cs_context *csc)
     radeon_cs_context_cleanup(csc);
     FREE(csc->relocs_bo);
     FREE(csc->relocs);
+    csc->relocs_scored = NULL;
 }
 
 
@@ -236,6 +243,9 @@ int radeon_get_reloc(struct radeon_cs_context *csc, struct radeon_bo *bo)
     if (csc->is_handle_added[hash]) {
         i = csc->reloc_indices_hashlist[hash];
         reloc = &csc->relocs[i];
+        if (bo->rws->info.drm_minor >= 38)
+            reloc = (struct drm_radeon_cs_reloc*) &csc->relocs_scored[i];
+
         if (reloc->handle == bo->handle) {
             return i;
         }
@@ -244,6 +254,9 @@ int radeon_get_reloc(struct radeon_cs_context *csc, struct radeon_bo *bo)
         for (i = csc->crelocs; i != 0;) {
             --i;
             reloc = &csc->relocs[i];
+            if (bo->rws->info.drm_minor >= 38)
+                reloc = (struct drm_radeon_cs_reloc*) &csc->relocs_scored[i];
+
             if (reloc->handle == bo->handle) {
                 /* Put this reloc in the hash list.
                  * This will prevent additional hash collisions if there are
@@ -278,6 +291,10 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
     enum radeon_bo_domain wd = usage & RADEON_USAGE_WRITE ? domains : 0;
     bool update_hash = TRUE;
     int i;
+    unsigned reloc_size = RELOC_DWORDS;
+
+    if (bo->rws->info.drm_minor >= 38)
+        reloc_size = RELOC_DWORDS_SCORED;
 
     priority = MIN2(priority, 15);
     *added_domains = 0;
@@ -285,11 +302,16 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
     if (csc->is_handle_added[hash]) {
         i = csc->reloc_indices_hashlist[hash];
         reloc = &csc->relocs[i];
+        if (bo->rws->info.drm_minor >= 38)
+            reloc = (struct drm_radeon_cs_reloc*) &csc->relocs_scored[i];
 
         if (reloc->handle != bo->handle) {
             /* Hash collision, look for the BO in the list of relocs linearly. */
             for (i = csc->crelocs - 1; i >= 0; i--) {
                 reloc = &csc->relocs[i];
+                if (bo->rws->info.drm_minor >= 38)
+                    reloc = (struct drm_radeon_cs_reloc*) &csc->relocs_scored[i];
+
                 if (reloc->handle == bo->handle) {
                     /*printf("write_reloc collision, hash: %i, handle: %i\n", hash, bo->handle);*/
                     break;
@@ -326,8 +348,9 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
         size = csc->nrelocs * sizeof(struct radeon_bo*);
         csc->relocs_bo = realloc(csc->relocs_bo, size);
 
-        size = csc->nrelocs * sizeof(struct drm_radeon_cs_reloc);
+        size = csc->nrelocs * reloc_size * sizeof(uint32_t);
         csc->relocs = realloc(csc->relocs, size);
+        csc->relocs_scored = (struct drm_radeon_cs_reloc_scored*) csc->relocs;
 
         csc->chunks[1].chunk_data = (uint64_t)(uintptr_t)csc->relocs;
     }
@@ -336,7 +359,11 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
     csc->relocs_bo[csc->crelocs] = NULL;
     radeon_bo_reference(&csc->relocs_bo[csc->crelocs], bo);
     p_atomic_inc(&bo->num_cs_references);
+
     reloc = &csc->relocs[csc->crelocs];
+    if (bo->rws->info.drm_minor >= 38)
+        reloc = (struct drm_radeon_cs_reloc*) &csc->relocs_scored[csc->crelocs];
+
     reloc->handle = bo->handle;
     reloc->read_domains = rd;
     reloc->write_domain = wd;
@@ -347,7 +374,7 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
         csc->reloc_indices_hashlist[hash] = csc->crelocs;
     }
 
-    csc->chunks[1].length_dw += RELOC_DWORDS;
+    csc->chunks[1].length_dw += reloc_size;
 
     *added_domains = rd | wd;
     return csc->crelocs++;
@@ -437,6 +464,10 @@ static void radeon_drm_cs_write_reloc(struct radeon_winsys_cs *rcs,
     struct radeon_drm_cs *cs = radeon_drm_cs(rcs);
     struct radeon_bo *bo = (struct radeon_bo*)buf;
     unsigned index = radeon_get_reloc(cs->csc, bo);
+    unsigned reloc_size = RELOC_DWORDS;
+
+    if (bo->rws->info.drm_minor >= 38)
+        reloc_size = RELOC_DWORDS_SCORED;
 
     if (index == -1) {
         fprintf(stderr, "radeon: Cannot get a relocation in %s.\n", __func__);
@@ -444,7 +475,7 @@ static void radeon_drm_cs_write_reloc(struct radeon_winsys_cs *rcs,
     }
 
     OUT_CS(&cs->base, 0xc0001000);
-    OUT_CS(&cs->base, index * RELOC_DWORDS);
+    OUT_CS(&cs->base, index * reloc_size);
 }
 
 void radeon_drm_cs_emit_ioctl_oneshot(struct radeon_drm_cs *cs, struct radeon_cs_context *csc)
@@ -595,6 +626,9 @@ static void radeon_drm_cs_flush(struct radeon_winsys_cs *rcs, unsigned flags, ui
                 cs->cst->flags[1] = RADEON_CS_RING_COMPUTE;
                 cs->cst->cs.num_chunks = 3;
             }
+            if (cs->ws->info.drm_minor >= 38) {
+                cs->cst->flags[0] |= RADEON_CS_USE_SCORED;
+            }
             break;
         }
 
@@ -654,10 +688,17 @@ static boolean radeon_bo_is_referenced(struct radeon_winsys_cs *rcs,
     if (index == -1)
         return FALSE;
 
-    if ((usage & RADEON_USAGE_WRITE) && cs->csc->relocs[index].write_domain)
-        return TRUE;
-    if ((usage & RADEON_USAGE_READ) && cs->csc->relocs[index].read_domains)
-        return TRUE;
+    if (bo->rws->info.drm_minor >= 38) {
+        if ((usage & RADEON_USAGE_WRITE) && cs->csc->relocs_scored[index].write_domain)
+            return TRUE;
+        if ((usage & RADEON_USAGE_READ) && cs->csc->relocs_scored[index].read_domains)
+            return TRUE;
+    } else {
+        if ((usage & RADEON_USAGE_WRITE) && cs->csc->relocs[index].write_domain)
+            return TRUE;
+        if ((usage & RADEON_USAGE_READ) && cs->csc->relocs[index].read_domains)
+            return TRUE;
+    }
 
     return FALSE;
 }

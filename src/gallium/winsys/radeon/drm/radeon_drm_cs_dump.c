@@ -111,8 +111,14 @@ void radeon_dump_cs_on_lockup(struct radeon_drm_cs *cs, struct radeon_cs_context
 
     fprintf(dump, "static uint32_t bo_relocs[%d] = {\n", csc->crelocs * 4);
     for (i = 0; i < csc->crelocs; i++) {
-        fprintf(dump, "    0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+        if (cs->ws->info.drm_minor >= 38) {
+            fprintf(dump, "    0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                0, csc->relocs_scored[i].read_domains,
+                csc->relocs_scored[i].write_domain, csc->relocs_scored[i].flags);
+        } else {
+            fprintf(dump, "    0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
                 0, csc->relocs[i].read_domains, csc->relocs[i].write_domain, csc->relocs[i].flags);
+        }
     }
     fprintf(dump, "};\n\n");
 

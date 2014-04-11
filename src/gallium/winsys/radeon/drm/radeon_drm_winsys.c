@@ -620,7 +620,6 @@ static PIPE_THREAD_ROUTINE(radeon_drm_cs_emit_ioctl, param)
 static void radeon_update_bo_stats_cpu(struct radeon_winsys *rws,
 				       struct radeon_winsys_cs_handle *buf)
 {
-    struct radeon_drm_winsys *ws = (struct radeon_drm_winsys*)rws;
     struct radeon_bo *bo = (struct radeon_bo*)buf;
 
     bo->stats.num_cpu_ops++;
@@ -641,7 +640,7 @@ static PIPE_THREAD_ROUTINE(radeon_drm_timing_thread, param)
         usleep(100);
     }
 
-    return NULL;
+    return 0;
 }
 
 DEBUG_GET_ONCE_BOOL_OPTION(thread, "RADEON_THREAD", TRUE)
