@@ -107,8 +107,12 @@
 #define RADEON_CS_END_OF_FRAME      0x04
 #endif
 
+#ifndef RADEON_CS_USE_SCORED
+#define RADEON_CS_USE_SCORED       0x08
+#endif
 
 #define RELOC_DWORDS (sizeof(struct drm_radeon_cs_reloc) / sizeof(uint32_t))
+#define RELOC_DWORDS_SCORED (sizeof(struct drm_radeon_cs_reloc_scored) / sizeof(uint32_t))
 
 static boolean radeon_init_cs_context(struct radeon_cs_context *csc,
                                       struct radeon_drm_winsys *ws)
