@@ -373,6 +373,10 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
     reloc->write_domain = wd;
     reloc->flags = priority;
 
+    if (bo->rws->info.drm_minor >= 38) {
+        ((struct drm_radeon_cs_reloc_scored*)reloc)->score = bo->stats.score;
+    }
+
     csc->is_handle_added[hash] = TRUE;
     if (update_hash) {
         csc->reloc_indices_hashlist[hash] = csc->crelocs;
