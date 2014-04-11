@@ -322,6 +322,10 @@ static unsigned radeon_add_reloc(struct radeon_drm_cs *cs,
         if (i >= 0) {
             update_reloc(reloc, rd, wd, priority, added_domains);
 
+            if (bo->rws->info.drm_minor >= 38) {
+                ((struct drm_radeon_cs_reloc_scored*)reloc)->score = bo->stats.score;
+            }
+
             /* For async DMA, every add_reloc call must add a buffer to the list
              * no matter how many duplicates there are. This is due to the fact
              * the DMA CS checker doesn't use NOP packets for offset patching,
