@@ -64,5 +64,5 @@ uint32_t ai_calculate_score(const float inputs[INPUT_NEURONS],
 
 	const float score = clampf(smootherstep(weighted_sum), 0, 0.999f);
 
-	return score * UINT_MAX;
+	return score * UINT_MAX * 0.1f;
 }
